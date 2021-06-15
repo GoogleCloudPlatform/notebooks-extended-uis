@@ -43,9 +43,12 @@ Make sure that you have them installed.
 
 This section refers to some variables that you need to set in your Terraform setup: `console_url`, `client_id`. For details about those variables, see the [Inputs](#inputs) section.
 
-Before you can deploy the custom console, you need an **OAuth2.0 Web client ID**: To create one, refer to this [documentation](https://support.google.com/cloud/answer/6158849#zippy=%2Cweb-applications). Make sure to add `console_url` as a Javascript origin.
+Before you can deploy the custom console, you need an **OAuth2.0 Web client ID**: To create one, refer to this [documentation](https://support.google.com/cloud/answer/6158849#zippy=%2Cweb-applications):
 
-Once you have created both of them, go to the console and copy the values to populate `client_id` in your `.tfvars` file.
+- If you user `gcs` as a `deployment_target`, make sure to add `https://storage.googleapis.com` as a Javascript origin.
+- If you user `gcs_static` as a `deployment_target`, make sure to add the `console_url` value as a Javascript origin.
+
+Once you have created the web client ID, go to the console and copy the values to populate `client_id` in your `.tfvars` file.
 
 ## Deployment with Terraform
 
@@ -68,7 +71,8 @@ From your command line, make sure that you are in the the root folder of this re
 |client_id|`string`||yes|An Google Cloud oauth2.0 Client ID for web applications. Ex: `987654321-ghijklm.apps.googleusercontent.com`
 |project|`string`||yes|Google Cloud project where to deploy the console. Ex: `example-project-id`|
 |console_url|`string`||yes|Url for users to access the console. Ex: `console.example.com`|
-|deployment_target|`string`|`gcs_static`|no|Where to deploy the UI. Currently supports Cloud Storage `gcs` and Cloud Storage static buckets `gcs_static`.|
+|deployment_target|`string`|`gcs`|no|Where to deploy the UI. Currently supports Cloud Storage `gcs` and Cloud Storage static buckets `gcs_static`.|
+|deployment_context|`string`|`prod`|no|Deployment context. `dev` prevents static page caching.|
 |cloud_dns_project|`string`||no|Project where your Cloud DNS is set up. Ex: `example-project-dns-id`|
 |cloud_dns_zone|`string`||no|Name of the Cloud DNS zone to create for your console. Ex: `example-com-zone`|
 |cloud_dns_record_zone|`string`||no|Name of the Cloud DNS zone where you want to add the DNS record for the console. Ex: `example-com-zone`|
