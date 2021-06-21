@@ -73,6 +73,7 @@ From your command line, make sure that you are in the the root folder of this re
 |console_url|`string`||yes|Url for users to access the console. Ex: `console.example.com`|
 |deployment_target|`string`|`gcs`|no|Where to deploy the UI. Currently supports Cloud Storage `gcs` and Cloud Storage static buckets `gcs_static`.|
 |cache_control|`string`|`no-cache`|no| Caching behavior for index.html, 404.html and config.js.|
+|deploy_consoles|`string`|`False`|no| Whether to create an example Notebook Console.|
 |cloud_dns_project|`string`||no|Project where your Cloud DNS is set up. Ex: `example-project-dns-id`|
 |cloud_dns_zone|`string`||no|Name of the Cloud DNS zone to create for your console. Ex: `example-com-zone`|
 |cloud_dns_record_zone|`string`||no|Name of the Cloud DNS zone where you want to add the DNS record for the console. Ex: `example-com-zone`|
