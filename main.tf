@@ -18,7 +18,7 @@ module "management_ui_gcs" {
   count                   = contains(["gcs", "gcs_static"], var.deployment_target) ? 1 : 0
   source                  = "./modules/management_ui_gcs"
   deployment_target       = var.deployment_target
-  deployment_context      = var.deployment_context
+  cache_control           = var.cache_control
   folder_static           = var.folder_static
   project                 = var.project
   client_id               = var.client_id
@@ -31,17 +31,18 @@ module "management_ui_gcs" {
 }
 
 // [START example_notebook]
-// resource "google_notebooks_instance" "instance" {
-//   project       = var.project
-//   name          = "example-notebook-console"
-//   machine_type  = "n2-standard-2"
-//   location      = "us-west1-b"
-//   metadata = {
-//     installed-extensions  = "beatrix_jupyterlab-latest.tar.gz"
-//   }
-//   vm_image {
-//     project      = "deeplearning-platform-release"
-//     image_family = "tf2-latest-cpu"
-//   }
-// }
+resource "google_notebooks_instance" "instance" {
+  count         = contains(["true", "yes", "1"], lower(var.deploy_consoles)) ? 1 : 0
+  project       = var.project
+  name          = "example-notebook-console"
+  machine_type  = "n2-standard-2"
+  location      = "us-west1-b"
+  metadata = {
+    installed-extensions  = "beatrix_jupyterlab-latest.tar.gz"
+  }
+  vm_image {
+    project      = "deeplearning-platform-release"
+    image_family = "tf2-latest-cpu"
+  }
+}
 // [END example_notebook]

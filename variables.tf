@@ -38,10 +38,18 @@ variable "deployment_target" {
   default     = "gcs"
 }
 
-variable "deployment_context" {
-  description = "Deployment context. `dev` disables Cloud Storage caching."
+# Although caching file is not a security hasard , some users might get confused if files
+# gets cached outside the VPC-SC perimeter and are visible so default sets `no-cache`.
+variable "cache_control" {
+  description = "Caching behavior for the static files."
   type        = string
-  default     = "prod"
+  default     = "no-store"
+}
+
+variable "deploy_consoles" {
+  description = "Whether to deploy notebook consoles."
+  type        = string
+  default     = "False"
 }
 
 variable "cloud_dns_project" {
@@ -78,4 +86,3 @@ variable "gcs_domain_prefix" {
   type        = string
   default     = "https://storage.googleapis.com"
 }
-

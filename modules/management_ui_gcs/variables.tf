@@ -19,8 +19,8 @@ variable "deployment_target" {
   type        = string
 }
 
-variable "deployment_context" {
-  description = "Deployment context. `dev` disables Cloud Storage caching."
+variable "cache_control" {
+  description = "Caching behavior for the static files."
   type        = string
 }
 

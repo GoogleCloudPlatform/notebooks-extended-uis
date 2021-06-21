@@ -58,7 +58,7 @@ resource "google_storage_bucket_object" "file_404" {
   content       = templatefile("${var.folder_static}/404.tpl", { relative_path = var.relative_path })
   bucket        = google_storage_bucket.console.name
   content_type  = "text/html; charset=utf-8"
-  cache_control = var.deployment_context == "dev" ? "no-store" : "public, max-age=3600"
+  cache_control = var.cache_control
 }
 
 resource "google_storage_bucket_object" "file_index" {
@@ -66,7 +66,7 @@ resource "google_storage_bucket_object" "file_index" {
   content       = templatefile("${var.folder_static}/index.tpl", { relative_path = var.relative_path })
   bucket        = google_storage_bucket.console.name
   content_type  = "text/html; charset=utf-8"
-  cache_control = var.deployment_context == "dev" ? "no-store" : "public, max-age=3600"
+  cache_control = var.cache_control
 }
 
 resource "google_storage_bucket_object" "file_config" {
@@ -74,7 +74,7 @@ resource "google_storage_bucket_object" "file_config" {
   content       = templatefile("${var.folder_static}/javascript/config.tpl", { client_id = var.client_id })
   bucket        = google_storage_bucket.console.name
   content_type  = "text/javascript; charset=utf-8"
-  cache_control = var.deployment_context == "dev" ? "no-store" : "public, max-age=3600"
+  cache_control = var.cache_control
 }
 
 # ------------------------------
@@ -160,4 +160,3 @@ resource "google_compute_global_forwarding_rule" "console" {
   port_range            = "443"
   target                = google_compute_target_https_proxy.console[0].self_link
 }
-
