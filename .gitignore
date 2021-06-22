@@ -6,3 +6,5 @@ example.tfvars
 terraform.tfvars
 .DS_Store
 config.js
+index.html
+404.html
