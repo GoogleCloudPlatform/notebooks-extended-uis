@@ -66,6 +66,8 @@
     a.upper_case:hover {color: #1C3AA9; background-color:rgba(0, 0, 0, 0.04);}
     .m-no{margin:0 0 0 0;}
     .m-l-s {margin-left:5px;}
+    .m-l-m {margin-left:10px;}
+    .m-l-l {margin-left:20px;}
     .m-t-s {margin-top:5px;}
     .m-r-s {margin-right:5px;}
     .m-b-s {margin-bottom:5px;}
@@ -95,47 +97,46 @@
     var currentGCPContext = new GCPContext();
 
     function handleClientLoad() {
-      // Load the API's client and auth2 modules.
-      // Call the initClient function after the modules load.
+      // Loads the API's client and auth2 modules.
+      // Calls the initClient function after the modules load.
       gapi.load('client:auth2', initClient);
     }
 
     function initClient() {
       // Initialize the gapi.client object, which app uses to make API requests.
-      // Get API key and client ID from API Console.
-      // 'scope' field specifies space-delimited list of access scopes.
+      // Get client ID from API Console to allow for the proper Javascript source.
       // https://developers.google.com/identity/sign-in/web/reference
-      gapi.client.init(config).then(function () {
-        GoogleAuth = gapi.auth2.getAuthInstance();
+      gapi.client.init(config).then(handleGapiClientInitFullfilled, handleGapiClientInitRejected);
+    }
 
-        // Listen for sign-in state changes.
-        GoogleAuth.isSignedIn.listen(updateSigninStatus);
+    function handleGapiClientInitFullfilled() {
+      GoogleAuth = gapi.auth2.getAuthInstance();
 
-        // Handle initial sign-in state. (Determine if user is already signed in.)
-        var user = GoogleAuth.currentUser.get();
-        setSigninStatus();
+      // Listen for sign-in state changes.
+      GoogleAuth.isSignedIn.listen(updateSigninStatus);
 
-        // Call handleAuthClick function when user clicks on "Sign In/Authorize" button.
-        $('#sign-in-button').click(function() {handleAuthClick();});
-        $('#sign-out-button').click(function() {handleAuthClick();});
-        $('#revoke-access-button').click(function() {revokeAccess();});
-        $('#list-instances-button').click(function() {handleListInstances();});
-        if (getURLVariable(URL_VAR_PROJECT_ID) == "") {
-          $('#nav-projects-select').click(function() {handleListProjects()});
-        }
-        $('#action-instances-start').click(function() {handleStartInstance();});
-        $('#action-instances-stop').click(function() {handleStopInstance();});
+      // Handle initial sign-in state. (Determine if user is already signed in.)
+      var user = GoogleAuth.currentUser.get();
+      setSigninStatus();
 
-        // Init other DOM elements.
-        $(".dropdown-trigger").dropdown({constrainWidth: false, coverTrigger: false});
-        $('.modal').modal();
+      // Call handleAuthClick function when user clicks on "Sign In/Authorize" button.
+      $('#sign-in-button').click(function() {handleAuthClick();});
+      $('#sign-out-button').click(function() {handleAuthClick();});
+      $('#revoke-access-button').click(function() {revokeAccess();});
+      $('#list-instances-button').click(function() {handleListInstances();});
+      if (!currentGCPContext.isProjectIdForced()) {
+        $('#nav-projects-select').click(function() {handleListProjects()});
+      }
+      $('#action-instances-start').click(function() {handleStartInstance();});
+      $('#action-instances-stop').click(function() {handleStopInstance();});
 
-        // Handle project set in URL
-        if (getURLVariable(URL_VAR_PROJECT_ID) != "") {
-          $('#nav-projects-select i:first-of-type').hide();
-          handleListInstances();
-        }
-      });
+      // Init other DOM elements.
+      $(".dropdown-trigger").dropdown({constrainWidth: false, coverTrigger: false});
+      $('.modal').modal();
+    }
+
+    function handleGapiClientInitRejected(error) {
+      console.log("handleGapiClientInitRejected")
     }
 
     function handleAuthClick() {
@@ -144,7 +145,10 @@
         GoogleAuth.signOut();
       } else {
         // User is not signed in. Start Google auth flow.
-        GoogleAuth.signIn();
+        GoogleAuth.signIn().then(
+          function(){},
+          function(error){}
+        );
       }
     }
 
@@ -167,16 +171,19 @@
     }
 
     function GCPContext() {
-      this.organization = "";
-      this.projectId = getURLVariable(URL_VAR_PROJECT_ID);
-      this.setOrganization = function(organization) {
-        this.organization = organization;
-      }
-      this.setProjectId = function(pid) {this.projectId = pid;}
+      console.log("Creating GCPContext.")
+      this.projectId = ""
+
+      this.setProjectId = function(pid) { this.projectId = pid; }
       this.getProjectId = function() { return this.projectId; }
+      this.isProjectSet = function() { return (this.projectId != ""); }
+      this.isProjectIdForced = function() { return (getURLVariable(URL_VAR_PROJECT_ID) != ""); }
+
+      this.setProjectId(getURLVariable(URL_VAR_PROJECT_ID));
     }
 
     function setSigninStatus() {
+      console.log(currentGCPContext.getProjectId());
       var signedUser = GoogleAuth.currentUser.get();
       var isAuthorized = signedUser.hasGrantedScopes(scopes);
       if (isAuthorized) {
@@ -184,12 +191,16 @@
         updateNavProfile();
         $("#body-no-authenticated").hide();
         $("#general-loader").hide();
-        if (currentGCPContext.getProjectId() == "") {
+        if (!currentGCPContext.isProjectSet()) {
           $("#body-no-project").show();
         }
         $('#nav-profile').css('display', 'inline-block');
         $('#nav-projects').css('display', 'inline-block');
-        updateProject(currentGCPContext.getProjectId())
+        updateProject(currentGCPContext.getProjectId());
+        if (currentGCPContext.isProjectIdForced()) {
+          $('#nav-projects-select i:first-of-type').hide();
+          handleListInstances();
+        }
       } else {
         $("#body-no-authenticated").show();
         $("#general-loader").hide();
@@ -197,7 +208,9 @@
         $("#body-content").hide();
         $('#nav-profile').css('display', 'none');
         $('#nav-projects').css('display', 'none');
-        updateProject("");
+        if (!currentGCPContext.isProjectIdForced()) {
+          updateProject("");
+        }
       }
     }
 
@@ -228,7 +241,7 @@
       // Execute the API request.
       request.execute(function(response) {
         showPart("modal-project-list");
-        addProjectsToDOM(response.projects);
+        addProjectsToDOM(response);
       });
     }
 
@@ -333,8 +346,20 @@
     // ----------------------
     // DOM functions
     // ----------------------
-    function addProjectsToDOM(projects) {
+    function addProjectsToDOM(response) {
+      if (response.hasOwnProperty('error')){
+        let error_html = makeRequestErrorDOM(response['error']);
+        $("#projects-list-results").hide();
+        $("#projects-list-error").show();
+        $("#projects-list-error").append(error_html);
+        return
+      }
+
+      $("#projects-list-results").show();
+      $("#projects-list-error").hide();
       $("#projects-list").html("");
+
+      projects = response.projects
       for (let i = 0; i < projects.length; i++) {
         project = projects[i];
         // Row
@@ -367,6 +392,17 @@
     }
 
     function addInstancesToDOM(response, filter = 'user') {
+      if (response.hasOwnProperty('error')){
+        let error_html = makeRequestErrorDOM(response['error']);
+        $("#instances-list-results").hide();
+        $("#instances-list-error").html("")
+        $("#instances-list-error").show();
+        $("#instances-list-error").append(error_html);
+        return
+      }
+
+      $("#instances-list-results").show();
+      $("#instances-list-error").hide();
       $("#instances-list").html("")
       if (!response.hasOwnProperty('instances')) {
         let tr_html = $("<tr>", {style: "border-bottom:0;"});
@@ -509,6 +545,15 @@
     function updateDOMProject(pid) {
       $('#nav-span-pid').html("&nbsp;" + pid + "&nbsp;");
     }
+
+    function makeRequestErrorDOM(error) {
+      var error_html = $('<div>', {class: 'red-text text-accent-4 m-l-m'});
+      var code_html = $('<h6>').append(error['code']);
+      var message_html = $('<p>').append(error['status'] + ": " + error['message']);
+      error_html.append(code_html)
+      error_html.append(message_html)
+      return error_html
+    }
   </script>
 </head>
 <body class="">
@@ -529,7 +574,8 @@
     </div>
     <div id="modal-project-list" class="modal-content">
       <div class="row"><h6>Select a project</h6></div>
-      <div class="row">
+      <div id="projects-list-error" class="row" style="display:none;"></div>
+      <div id="projects-list-results" class="row">
         <table>
           <thead><tr><th>Name</th><th>Id</th></tr></thead>
           <tbody id="projects-list"></tbody>
@@ -666,20 +712,23 @@
       </div>
     </div>
     <div id="body-results" style="display:none;">
-      <table>
-        <thead>
-          <tr>
-              <th></th>
-              <th></th>
-              <th>Instance name</th>
-              <th></th>
-              <th>Zone</th>
-              <th>Environment</th>
-              <th>Machine Type</th>
-          </tr>
-        </thead>
-        <tbody id="instances-list"></tbody>
-      </table>
+      <div id="instances-list-error" style="display:none;"></div>
+      <div id="instances-list-results">
+        <table>
+          <thead>
+            <tr>
+                <th></th>
+                <th></th>
+                <th>Instance name</th>
+                <th></th>
+                <th>Zone</th>
+                <th>Environment</th>
+                <th>Machine Type</th>
+            </tr>
+          </thead>
+          <tbody id="instances-list"></tbody>
+        </table>
+      </div>
     </div>
   </div>
   <script src="${relative_path}/javascript/config.js"></script>
