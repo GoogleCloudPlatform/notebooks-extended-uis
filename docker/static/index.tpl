@@ -89,6 +89,7 @@
       STATE_UNSPECIFIED: 'error',
       DELETED: 'error',
     }
+    var URL_VAR_PROJECT_ID = "projectId";
     var stateCheckIntervals = new Object();
     var currentUser = new User();
     var currentGCPContext = new GCPContext();
@@ -119,8 +120,9 @@
         $('#sign-out-button').click(function() {handleAuthClick();});
         $('#revoke-access-button').click(function() {revokeAccess();});
         $('#list-instances-button').click(function() {handleListInstances();});
-        $('#nav-projects-select').click(function() {handleListProjects()})
-
+        if (getURLVariable(URL_VAR_PROJECT_ID) == "") {
+          $('#nav-projects-select').click(function() {handleListProjects()});
+        }
         $('#action-instances-start').click(function() {handleStartInstance();});
         $('#action-instances-stop').click(function() {handleStopInstance();});
 
@@ -128,8 +130,11 @@
         $(".dropdown-trigger").dropdown({constrainWidth: false, coverTrigger: false});
         $('.modal').modal();
 
-        // List instances
-        // handleListInstances();
+        // Handle project set in URL
+        if (getURLVariable(URL_VAR_PROJECT_ID) != "") {
+          $('#nav-projects-select i:first-of-type').hide();
+          handleListInstances();
+        }
       });
     }
 
@@ -163,7 +168,7 @@
 
     function GCPContext() {
       this.organization = "";
-      this.projectId = "";
+      this.projectId = getURLVariable(URL_VAR_PROJECT_ID);
       this.setOrganization = function(organization) {
         this.organization = organization;
       }
@@ -179,9 +184,12 @@
         updateNavProfile();
         $("#body-no-authenticated").hide();
         $("#general-loader").hide();
-        $("#body-no-project").show();
+        if (currentGCPContext.getProjectId() == "") {
+          $("#body-no-project").show();
+        }
         $('#nav-profile').css('display', 'inline-block');
         $('#nav-projects').css('display', 'inline-block');
+        updateProject(currentGCPContext.getProjectId())
       } else {
         $("#body-no-authenticated").show();
         $("#general-loader").hide();
@@ -227,8 +235,6 @@
     function handleChooseProject(pid) {
       console.log("User chose project " + pid);
       updateProject(pid);
-      $('#body-no-project').hide();
-      $('#body-content').show();
       handleListInstances()
     }
 
@@ -249,6 +255,8 @@
       });
       // Execute the API request.
       request.execute(function(response) {
+        $('#body-no-project').hide();
+        $('#body-content').show();
         showPart('body-results');
         addInstancesToDOM(response)
       });
@@ -306,6 +314,20 @@
         }
         updateDOMState(instance, response.state);
       });
+    }
+    // ----------------------
+    // Helpers
+    // ----------------------
+    function getURLVariable(variable) {
+      const query = window.location.search.substring(1);
+      var vars = query.split('&');
+      for (var i = 0; i < vars.length; i++) {
+        var pair = vars[i].split('=');
+        if (decodeURIComponent(pair[0]) == variable) {
+          return decodeURIComponent(pair[1]);
+        }
+      }
+      return "";
     }
 
     // ----------------------
