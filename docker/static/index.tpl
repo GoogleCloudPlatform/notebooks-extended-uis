@@ -135,8 +135,10 @@
       $('.modal').modal();
     }
 
-    function handleGapiClientInitRejected(error) {
-      console.log("handleGapiClientInitRejected")
+    function handleGapiClientInitRejected(e) {
+      $("#general-loader").hide();
+      $("#errorer").html("gapi.client.init: " + e.error.message);
+      $("#errorer").show();
     }
 
     function handleAuthClick() {
@@ -645,6 +647,7 @@
       <a id="sign-in-button" class="waves-effect waves-light blue darken-3 btn">Signin</a>
     </div>
   </div>
+  <div id="errorer" class="center-align red-text text-darken-2" style="display:none"></div>
   <div id="general-loader" class="center-align">
     <div class="preloader-wrapper small active">
       <div class="spinner-layer spinner-blue-only">
