@@ -245,6 +245,8 @@
     }
 
     function handleListInstances(location = '-') {
+      $('#body-no-project').hide();
+      $('#body-content').show();
       hidePart('body-results');
       projectId = currentGCPContext.getProjectId()
       parent = "projects/" + projectId + "/locations/" + location;
@@ -255,8 +257,6 @@
       });
       // Execute the API request.
       request.execute(function(response) {
-        $('#body-no-project').hide();
-        $('#body-content').show();
         showPart('body-results');
         addInstancesToDOM(response)
       });
