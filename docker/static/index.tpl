@@ -280,7 +280,7 @@
     function handleStartInstance() {
       var selected = [];
       $('#body-results input:checked').each(function() {
-        var instanceFullName = $(this).attr('id').replaceAll('_', '/');
+        var instanceFullName = $(this).attr('id').replace(/_/g, '\/');;
         console.log('Starting instance ' + instanceFullName);
         // We add an update here so we don't wait for the API to come back.
         updateDOMState(instanceFullName, 'STARTING');
@@ -299,7 +299,7 @@
     function handleStopInstance() {
       var selected = [];
       $('#body-results input:checked').each(function() {
-        var instanceFullName = $(this).attr('id').replaceAll('_', '/');
+        var instanceFullName = $(this).attr('id').replace(/_/g, '\/');;
         console.log('Stopping instance ' + instanceFullName);
         // We add an update here so we don't wait for the API to come back.
         updateDOMState(instanceFullName, 'STOPPING');
@@ -428,7 +428,8 @@
 
         partsName = instance.name.split('/')
         partsMachineTypes = instance.machineType.split('/')
-        instanceFullNameId = instance.name.replaceAll('/', '_')
+        instanceFullNameId = instance.name.replace(/\//g, '_');
+
         instanceName = partsName[partsName.length - 1]
         instanceZone = partsName[partsName.length - 3]
         instanceType = partsMachineTypes[partsMachineTypes.length - 1]
@@ -507,7 +508,7 @@
     }
 
     function buildDOMFromState(instance, state){
-      var instanceFullNameId = instance.replaceAll('/', '_');
+      var instanceFullNameId = instance.replace(/\//g, '_');;
       attributes = {
         id: "state_" + instanceFullNameId,
         state: state,
@@ -533,7 +534,7 @@
     }
 
     function updateDOMState(instance, state) {
-      var instanceFullNameId = instance.replaceAll('/', '_');
+      var instanceFullNameId = instance.replace(/\//g, '_');;
       var target = $("#state_" + instanceFullNameId);
       var currentContent = target.html();
       if (currentContent.includes(stateDOMs[state])){
