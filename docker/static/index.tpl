@@ -443,10 +443,13 @@
       var instance;
 
       for (let i = 0; i < instances.length; i++) {
+
         instance = instances[i];
+        instance_metadata = (instance.hasOwnProperty('metadata')) ? instance.metadata : {}
+
         if (filter == filters.USER
-            && instance.metadata['proxy-user-mail'] !== undefined
-            && instance.metadata['proxy-user-mail'] != currentUser.getEmail()) {
+            && instance_metadata['proxy-user-mail'] !== undefined
+            && instance_metadata['proxy-user-mail'] != currentUser.getEmail()) {
           continue;
         }
 
@@ -497,7 +500,7 @@
         td_zone_html.html(instanceZone);
         // Environment
         let td_environment_html = $("<td>", {class: ""});
-        td_environment_html.html(instance.metadata.framework);
+        td_environment_html.html(instance_metadata.framework);
         // Machine Type
         let td_machine_html = $("<td>", {class: ""});
         td_machine_html.html(instanceType);
