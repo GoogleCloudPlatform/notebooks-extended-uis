@@ -100,6 +100,9 @@
       ALL: 0,
       USER: 1
     }
+    var ux = {
+      INTERVAL_CHECK: 5000
+    }
     var stateCheckIntervals = new Object();
     var currentUser = new User();
     var currentGCPContext = new GCPContext();
@@ -269,6 +272,7 @@
     }
 
     function handleListInstances(location = '-') {
+      $('#error-start-stop').html("&nbsp;");
       $('#body-no-project').hide();
       $('#body-content').show();
       hidePart('body-results');
@@ -291,6 +295,7 @@
       if (!isAnyInstanceSelected()) {
         return
       }
+      $('#error-start-stop').html("&nbsp;");
       var selected = [];
       $('#body-results input:checked').each(function() {
         var instanceFullName = $(this).attr('id').replace(/_/g, '\/');;
@@ -304,7 +309,14 @@
         });
         // Execute the API request.
         request.execute(function(response) {
-          stateCheckIntervals[instanceFullName] = setInterval(handleCheckState, 5000, instanceFullName);
+          if (response.hasOwnProperty('error')) {
+            error = response['error'];
+            $('#error-start-stop').html(error['code'] + ": " + error['message']);
+            $('#error-start-stop').show();
+            handleCheckState(instanceFullName);
+            return
+          }
+          stateCheckIntervals[instanceFullName] = setInterval(handleCheckState, ux.INTERVAL_CHECK, instanceFullName);
         });
       });
     }
@@ -313,6 +325,7 @@
       if (!isAnyInstanceSelected()) {
         return
       }
+      $('#error-start-stop').html("&nbsp;");
       var selected = [];
       $('#body-results input:checked').each(function() {
         var instanceFullName = $(this).attr('id').replace(/_/g, '\/');;
@@ -325,7 +338,14 @@
           'path': url
         });
         request.execute(function(response) {
-          stateCheckIntervals[instanceFullName] = setInterval(handleCheckState, 5000, instanceFullName);
+          if (response.hasOwnProperty('error')) {
+            error = response['error'];
+            $('#error-start-stop').html(error['code'] + ": " + error['message']);
+            $('#error-start-stop').show();
+            handleCheckState(instanceFullName);
+            return
+          }
+          stateCheckIntervals[instanceFullName] = setInterval(handleCheckState, ux.INTERVAL_CHECK, instanceFullName);
         });
       });
     }
@@ -430,17 +450,15 @@
       $("#instances-list-results").show();
       $("#instances-list-error").hide();
       $("#instances-list").html("")
+
       if (!response.hasOwnProperty('instances')) {
-        let tr_html = $("<tr>", {style: "border-bottom:0;"});
-        let td_html = $("<td>", {style: "text-align:center;", colspan: "7"});
-        td_html.append('<div><i class="material-icons" style="font-size:100px">blur_on</i></div>');
-        td_html.append('<div>No instance found</div>');
-        tr_html.append(td_html);
-        $("#instances-list").append(tr_html);
+        addNoInstanceResult();
         return
       }
+
       var instances = response.instances;
       var instance;
+      var num_instances_after_filter = 0
 
       for (let i = 0; i < instances.length; i++) {
 
@@ -452,6 +470,8 @@
             && instance_metadata['proxy-user-mail'] != currentUser.getEmail()) {
           continue;
         }
+
+        num_instances_after_filter +=1;
 
         partsName = instance.name.split('/')
         partsMachineTypes = instance.machineType.split('/')
@@ -517,8 +537,21 @@
         $("#instances-list").append(tr_html);
         // Runs in case the page the loaded while an instances is pending.
         handleCheckState(instance.name);
-        stateCheckIntervals[instance.name] = setInterval(handleCheckState, 5000, instance.name);
+        stateCheckIntervals[instance.name] = setInterval(handleCheckState, ux.INTERVAL_CHECK, instance.name);
       }
+
+      if (num_instances_after_filter == 0) {
+        addNoInstanceResult();
+      }
+    }
+
+    function addNoInstanceResult() {
+      let tr_html = $("<tr>", {style: "border-bottom:0;"});
+      let td_html = $("<td>", {style: "text-align:center;", colspan: "7"});
+      td_html.append('<div><i class="material-icons" style="font-size:100px">blur_on</i></div>');
+      td_html.append('<div>No instance found</div>');
+      tr_html.append(td_html);
+      $("#instances-list").append(tr_html);
     }
 
     function buildIconLoader() {
@@ -714,7 +747,9 @@
       <div class="col s1">
         <h6>Notebooks</h6>
       </div>
-      <div class="col s8">&nbsp;</div>
+      <div class="col s8 center-align">
+        <p class="red-text text-accent-4" id="error-start-stop">&nbsp;</p>
+      </div>
       <div class="col s1">
         <a class="upper_case valign-wrapper" id="list-instances-button">
           <i class="material-icons">refresh</i>
