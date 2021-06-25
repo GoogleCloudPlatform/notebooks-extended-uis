@@ -59,6 +59,8 @@
     nav, nav .nav-wrapper i, nav a.sidenav-trigger, nav a.sidenav-trigger i {height: 44px;line-height: 44px;}
     .dropdown-content li {min-height: 45px;}
     .dropdown-content li>a, .dropdown-content li>span {color: #000;font-family:Roboto;font-size:15px;font-style:normal;font-weight:400;}
+    .switch label input[type=checkbox]:checked+.lever{background-color: #bbdefb;}
+    .switch label input[type=checkbox]:checked+.lever:before, .switch label input[type=checkbox]:checked+.lever:after {background-color: #1a73e8;}
     /* Custom */
     h6{font-family: Roboto;font-size:18px;font-weight: 400;margin:0;padding:0;}
     p{font-family: Roboto;font-size: 13px;font-style: normal;font-weight: 400;height: auto;letter-spacing: normal;line-height: 20px;}
@@ -76,6 +78,8 @@
     table>tbody>tr>td{color:rgba(0, 0, 0, 0.66);display:table-cell;font-family:Roboto;font-size:13px;font-weight: 400;height: 50px;left: 0px;letter-spacing: normal;line-height: 20px;}
     [type="checkbox"].filled-in:checked+span:not(.lever):after{border: 2px solid #1a73e8;background-color: #1a73e8;}
     #projects-list tr:hover {background-color:rgba(0,0,0,.04);cursor: pointer;}
+    .btn-action {padding:0 5px;}
+    .btn-action i.left {margin-right: 5px;}
   </style>
   <script>
     var GoogleAuth;
@@ -92,6 +96,10 @@
       DELETED: 'error',
     }
     var URL_VAR_PROJECT_ID = "projectId";
+    var filters = {
+      ALL: 0,
+      USER: 1
+    }
     var stateCheckIntervals = new Object();
     var currentUser = new User();
     var currentGCPContext = new GCPContext();
@@ -124,6 +132,7 @@
       $('#sign-out-button').click(function() {handleAuthClick();});
       $('#revoke-access-button').click(function() {revokeAccess();});
       $('#list-instances-button').click(function() {handleListInstances();});
+      $('#list-instances-filter').click(function() {handleListInstances();});
       if (!currentGCPContext.isProjectIdForced()) {
         $('#nav-projects-select').click(function() {handleListProjects()});
       }
@@ -273,11 +282,15 @@
       // Execute the API request.
       request.execute(function(response) {
         showPart('body-results');
-        addInstancesToDOM(response)
+        filter_name = getFilterName($('#list-instances-filter').prop('checked'));
+        addInstancesToDOM(response, filter_name)
       });
     }
 
     function handleStartInstance() {
+      if (!isAnyInstanceSelected()) {
+        return
+      }
       var selected = [];
       $('#body-results input:checked').each(function() {
         var instanceFullName = $(this).attr('id').replace(/_/g, '\/');;
@@ -297,6 +310,9 @@
     }
 
     function handleStopInstance() {
+      if (!isAnyInstanceSelected()) {
+        return
+      }
       var selected = [];
       $('#body-results input:checked').each(function() {
         var instanceFullName = $(this).attr('id').replace(/_/g, '\/');;
@@ -343,6 +359,14 @@
         }
       }
       return "";
+    }
+
+    function getFilterName(selectorValue) {
+      return (selectorValue ? filters.USER : filters.ALL);
+    };
+
+    function isAnyInstanceSelected() {
+      return $('#body-results input:checked').length > 0;
     }
 
     // ----------------------
@@ -393,7 +417,7 @@
       $("#nav-email").html(currentUser.email)
     }
 
-    function addInstancesToDOM(response, filter = 'user') {
+    function addInstancesToDOM(response, filter = filters.USER) {
       if (response.hasOwnProperty('error')){
         let error_html = makeRequestErrorDOM(response['error']);
         $("#instances-list-results").hide();
@@ -420,7 +444,7 @@
 
       for (let i = 0; i < instances.length; i++) {
         instance = instances[i];
-        if (filter == 'user'
+        if (filter == filters.USER
             && instance.metadata['proxy-user-mail'] !== undefined
             && instance.metadata['proxy-user-mail'] != currentUser.getEmail()) {
           continue;
@@ -447,6 +471,7 @@
         let cb_label_html = $("<label>", {});
         let cb_span_html = $("<span>", {});
         let cb_box_html = $("<input>", cb_box_attributes);
+        cb_box_html.click(function() {setStatusStartStopButtons();});
         cb_label_html.append(cb_box_html);
         cb_label_html.append(cb_span_html);
         td_cb_html.append(cb_label_html)
@@ -557,6 +582,16 @@
       error_html.append(message_html)
       return error_html
     }
+
+    function setStatusStartStopButtons() {
+      if (isAnyInstanceSelected()) {
+        $('#action-instances-start').removeClass('disabled')
+        $('#action-instances-stop').removeClass('disabled')
+      } else {
+        $('#action-instances-start').addClass('disabled')
+        $('#action-instances-stop').addClass('disabled')
+      }
+    }
   </script>
 </head>
 <body class="">
@@ -604,7 +639,7 @@
   <nav class="navbar-fixed">
     <div class="nav-wrapper">
       <!-- Left side -->
-      <ul class="left hide-on-med-and-down">
+      <ul class="left">
         <!-- Logo -->
         <li style="width: 80px">
           <svg style="fill: #fff;" width="100%" height="100%" viewBox="0 0 72 24" fit="" preserveAspectRatio="xMidYMid meet" focusable="false">
@@ -628,7 +663,7 @@
         </li>
       </ul>
       <!-- Right side -->
-      <ul id="nav-profile" class="right hide-on-med-and-down" style="display:none">
+      <ul id="nav-profile" class="right" style="display:none">
         <li>
           <a class="dropdown-trigger" href="#!" data-target="nav-dropdown-extra">
             <i class="material-icons">more_vert</i>
@@ -684,22 +719,30 @@
         </a>
       </div>
       <div class="col s1">
-        <a class="upper_case valign-wrapper" id="action-instances-start">
-          <i class="material-icons">play_arrow</i>
-          <span>&nbsp;Start</span>
+        <a class="btn-flat upper_case btn-action disabled" id="action-instances-start">
+          <i class="material-icons left">play_arrow</i>Start
         </a>
       </div>
       <div class="col s1">
-        <a class="upper_case valign-wrapper" id="action-instances-stop">
-          <i class="material-icons">stop</i>
-          <span>&nbsp;Stop</span>
+        <a class="btn-flat upper_case btn-action disabled" id="action-instances-stop">
+          <i class="material-icons left">stop</i>Stop
         </a>
       </div>
     </div>
     <div class="divider"></div>
     <!-- -->
     <div class="row valign-wrapper m-b-s">
-      <div class="col s12"><p>Start and stop your existing notebook instances.</p></div>
+      <div class="col s6"><p>Start and stop your existing notebook instances.</p></div>
+      <div class="col s6 right-align"><p>
+        <div class="switch">
+          <label>
+            No filter
+            <input id="list-instances-filter" type="checkbox" checked>
+            <span class="lever"></span>
+            User
+          </label>
+        </div>
+      </p></div>
     </div>
     <!-- Results -->
     <div id="body-results-loader" class="center-align" style="display:none;">
