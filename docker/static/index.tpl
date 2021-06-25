@@ -543,6 +543,8 @@
       if (num_instances_after_filter == 0) {
         addNoInstanceResult();
       }
+
+      setStatusStartStopButtons();
     }
 
     function addNoInstanceResult() {
