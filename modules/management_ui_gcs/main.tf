@@ -71,7 +71,7 @@ resource "google_storage_bucket_object" "file_index" {
 
 resource "google_storage_bucket_object" "file_config" {
   name          = "javascript/config.js"
-  content       = templatefile("${var.folder_static}/javascript/config.tpl", { client_id = var.client_id })
+  content       = templatefile("${var.folder_static}/javascript/config.tpl", { client_id = var.client_id, is_activating_project_selector_proactive = var.is_activating_project_selector_proactive })
   bucket        = google_storage_bucket.console.name
   content_type  = "text/javascript; charset=utf-8"
   cache_control = var.cache_control

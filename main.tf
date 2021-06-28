@@ -28,6 +28,8 @@ module "management_ui_gcs" {
   gcs_url                 = var.console_url
   gcs_location            = var.gcs_location
   relative_path           = var.deployment_target == "gcs" ? "${var.gcs_domain_prefix}/${var.console_url}" : "."
+  is_activating_project_selector_proactive = var.is_activating_project_selector_proactive
+
 }
 
 // [START example_notebook]
