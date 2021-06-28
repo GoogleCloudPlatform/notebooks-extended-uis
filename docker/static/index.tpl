@@ -141,6 +141,9 @@
       }
       $('#action-instances-start').click(function() {handleStartInstance();});
       $('#action-instances-stop').click(function() {handleStopInstance();});
+      $('#select-all-instances').click(function() {
+        upateAllInstancesCheckboxDOM($(this).prop('checked'));
+      });
 
       // Init other DOM elements.
       $(".dropdown-trigger").dropdown({constrainWidth: false, coverTrigger: false});
@@ -262,7 +265,7 @@
     function handleChooseProject(pid) {
       console.log("User chose project " + pid);
       updateProject(pid);
-      handleListInstances()
+      handleListInstances();
     }
 
     function updateProject(pid) {
@@ -275,6 +278,7 @@
       $('#error-start-stop').html("&nbsp;");
       $('#body-no-project').hide();
       $('#body-content').show();
+      $('#select-all-instances').prop('checked', false);
       hidePart('body-results');
       projectId = currentGCPContext.getProjectId()
       parent = "projects/" + projectId + "/locations/" + location;
@@ -297,11 +301,12 @@
       }
       $('#error-start-stop').html("&nbsp;");
       var selected = [];
-      $('#body-results input:checked').each(function() {
-        var instanceFullName = $(this).attr('id').replace(/_/g, '\/');;
+      $('#instances-list input:checked').each(function() {
+        var instanceFullNameId = $(this).attr('id');
+        var instanceFullName = instanceFullNameId.replace(/_/g, '\/');;
         console.log('Starting instance ' + instanceFullName);
-        // We add an update here so we don't wait for the API to come back.
-        updateDOMState(instanceFullName, 'STARTING');
+        // We add an update here so we change icon before API comes back.
+        updateRowDOMFromState(instanceFullNameId, 'STARTING');
         var url = "https://notebooks.googleapis.com/v1/" + instanceFullName + ":start";
         var request = gapi.client.request({
           'method': 'POST',
@@ -327,11 +332,12 @@
       }
       $('#error-start-stop').html("&nbsp;");
       var selected = [];
-      $('#body-results input:checked').each(function() {
-        var instanceFullName = $(this).attr('id').replace(/_/g, '\/');;
+      $('#instances-list input:checked').each(function() {
+        var instanceFullNameId = $(this).attr('id')
+        var instanceFullName = instanceFullNameId.replace(/_/g, '\/');;
         console.log('Stopping instance ' + instanceFullName);
-        // We add an update here so we don't wait for the API to come back.
-        updateDOMState(instanceFullName, 'STOPPING');
+        // We add an update here so we change icon before API comes back.
+        updateRowDOMFromState(instanceFullNameId, 'STOPPING');
         var url = "https://notebooks.googleapis.com/v1/" + instanceFullName + ":stop";
         var request = gapi.client.request({
           'method': 'POST',
@@ -350,20 +356,27 @@
       });
     }
 
-    function handleCheckState(instance) {
-      console.log("Checking state for instance " + instance);
-      var url = "https://notebooks.googleapis.com/v1/" + instance;
+    function handleCheckState(instanceFullName) {
+      console.log("Checking state for instance " + instanceFullName);
+      var instanceFullNameId = instanceFullName.replace(/\//g, '_');
+      var instanceProxyUri = undefined;
+      var url = "https://notebooks.googleapis.com/v1/" + instanceFullName;
       var request = gapi.client.request({
         'method': 'GET',
         'path': url
       });
-      request.execute(function(response) {
-        if (response.state == 'STOPPED' || response.state == 'ACTIVE') {
-          console.log("Clearing interval for " + instance);
-          clearInterval(stateCheckIntervals[instance]);
-          delete stateCheckIntervals[instance];
+      request.execute(function(instance) {
+        if (instance.state == 'STOPPED' || instance.state == 'ACTIVE') {
+          console.log("Clearing interval for " + instanceFullName);
+          clearInterval(stateCheckIntervals[instanceFullName]);
+          delete stateCheckIntervals[instanceFullName];
         }
-        updateDOMState(instance, response.state);
+        // Only fills the proxy URI if the user can use the instance from a Permission > Access to JupyterLab
+        // perspective. When the proxy URI === undefined, `buildDOMRowOpenLink` does not enable the link.
+        if (hasInstancePermission(instance)) {
+          instanceProxyUri = instance.proxyUri;
+        }
+        updateRowDOMFromState(instanceFullNameId, instance.state, instanceProxyUri);
       });
     }
     // ----------------------
@@ -386,7 +399,30 @@
     };
 
     function isAnyInstanceSelected() {
-      return $('#body-results input:checked').length > 0;
+      return $('#instances-list input:checked').length > 0;
+    }
+
+    function hasInstancePermission(instance) {
+      instance_metadata = (instance.hasOwnProperty('metadata')) ? instance.metadata : {};
+      return (instance_metadata['proxy-user-mail'] == undefined ||
+          instance_metadata['proxy-user-mail'] == currentUser.getEmail())
+    }
+
+    function addPrefix(s, p) {
+      if (s === undefined) {
+        return s;
+      }
+      if (s.startsWith(p)) {
+        return s;
+      }
+      return p + s
+    }
+
+    function makeInstanceProxyUrl(instance) {
+      if (!hasInstancePermission(instance)) {
+        return undefined
+      }
+      return addPrefix(instance.proxyUri, 'https://')
     }
 
     // ----------------------
@@ -456,18 +492,18 @@
         return
       }
 
+      // Read instances and force sort by name only for now.
       var instances = response.instances;
+      instances.sort((a, b) => (
+        a.name.split('/')[a.name.split('/').length - 1] > b.name.split('/')[b.name.split('/').length - 1]) ? 1 : -1)
+
       var instance;
       var num_instances_after_filter = 0
 
       for (let i = 0; i < instances.length; i++) {
-
         instance = instances[i];
-        instance_metadata = (instance.hasOwnProperty('metadata')) ? instance.metadata : {}
 
-        if (filter == filters.USER
-            && instance_metadata['proxy-user-mail'] !== undefined
-            && instance_metadata['proxy-user-mail'] != currentUser.getEmail()) {
+        if (filter == filters.USER && !hasInstancePermission(instance)) {
           continue;
         }
 
@@ -485,7 +521,7 @@
         let tr_html = $("<tr>", tr_attributes)
         // Checkbox
         //'<label><input type="checkbox" class="filled-in" checked="checked" id=""/><span>Filled in</span></label>'
-        let td_cb_html = $("<td>", {style: "text-align:center;"});
+        let td_cb_html = $("<td>", {class: "center-align"});
         let cb_box_attributes = {
           type: 'checkbox',
           id: instanceFullNameId,
@@ -494,26 +530,25 @@
         let cb_label_html = $("<label>", {});
         let cb_span_html = $("<span>", {});
         let cb_box_html = $("<input>", cb_box_attributes);
-        cb_box_html.click(function() {setStatusStartStopButtons();});
+        cb_box_html.click(function() {
+          if (!$(this).prop('checked')){
+            $('#select-all-instances').prop('checked', false);
+          }
+          setStatusStartStopButtons();
+        });
         cb_label_html.append(cb_box_html);
         cb_label_html.append(cb_span_html);
         td_cb_html.append(cb_label_html)
         // State
         let td_state_html = $("<td>", {class: ""});
-        let state_html = buildDOMFromState(instance.name, instance.state);
+        let state_html = buildDOMRowStateIcon(instanceFullNameId, instance.state);
         td_state_html.append(state_html);
         // Name
         let td_name_html = $("<td>", {class: ""});
         td_name_html.html(instanceName);
         // Open jupyterlab
         let td_lab_html = $("<td>", {});
-        let a_lab_attributes = {
-          class: "upper_case",
-          href: 'http://' + instance.proxyUri,
-          target:"_blank"
-        };
-        let a_lab_html = $("<a>", a_lab_attributes);
-        a_lab_html.html("OPEN JUPYTERLAB");
+        let a_lab_html = buildDOMRowOpenLink(instance)
         td_lab_html.append(a_lab_html);
         // Zone
         let td_zone_html = $("<td>", {class: ""});
@@ -556,6 +591,13 @@
       $("#instances-list").append(tr_html);
     }
 
+    function upateAllInstancesCheckboxDOM(checkStatus) {
+      $('#instances-list :checkbox').each(function() {
+        $(this).prop( "checked", checkStatus );
+      });
+      setStatusStartStopButtons();
+    }
+
     function buildIconLoader() {
       return `<div class="preloader-wrapper small active" style="height:20px;width:20px">
         <div class="spinner-layer spinner-blue-only">
@@ -570,42 +612,71 @@
       </div>`
     }
 
-    function buildDOMFromState(instance, state){
-      var instanceFullNameId = instance.replace(/\//g, '_');;
-      attributes = {
+    function buildDOMRowStateIcon(instanceFullNameId, instanceState) {
+      var attributes = {
         id: "state_" + instanceFullNameId,
-        state: state,
+        state: instanceState,
       }
-      content = "";
-      if (state == 'ACTIVE') {
+      var content = "";
+      if (instanceState == 'ACTIVE') {
         attributes['class'] = 'material-icons green-text text-darken-2';
-        content = stateDOMs[state]
-      } else if (state == 'STOPPED') {
+        content = stateDOMs[instanceState]
+      } else if (instanceState == 'STOPPED') {
         attributes['class'] = 'material-icons';
-        content = stateDOMs[state];
+        content = stateDOMs[instanceState];
       } else if (['STOPPING', 'STARTING', 'PROVISIONING',
-                  'UPGRADING', 'INITIALIZING', 'REGISTERING'].includes(state)) {
+                  'UPGRADING', 'INITIALIZING', 'REGISTERING'].includes(instanceState)) {
         content = buildIconLoader();
       } else {
         attributes['class'] = 'material-icons';
-        content = stateDOMs[state];
+        content = stateDOMs[instanceState];
       }
-      snippet = "";
+      var snippet = "";
       snippet = $('<span>', attributes);
       snippet.html(content);
       return snippet;
     }
 
-    function updateDOMState(instance, state) {
-      var instanceFullNameId = instance.replace(/\//g, '_');;
+    function buildDOMRowOpenLink(instance) {
+      var instanceFullNameId = instance.name.replace(/\//g, '_');
+      var instanceProxyUri = makeInstanceProxyUrl(instance)
+      var classList = 'btn-flat upper_case'
+      if (instance.state != 'ACTIVE' || instanceProxyUri === undefined) {
+        classList += ' disabled';
+      }
+      var attributes = {
+        id: 'open_' + instanceFullNameId,
+        class: classList,
+        href: instanceProxyUri,
+        target:"_blank"
+      };
+      a_html = $("<a>", attributes);
+      a_html.html("OPEN JUPYTERLAB");
+      return a_html;
+    }
+
+    function updateDOMRowOpenLink(instanceFullNameId, instanceState, instanceProxyUri) {
+      instanceProxyUri = addPrefix(instanceProxyUri, 'https://')
+      if (instanceState != 'ACTIVE' || instanceProxyUri === undefined) {
+        $('#open_' + instanceFullNameId).addClass('disabled');
+      } else {
+        $('#open_' + instanceFullNameId).removeClass('disabled');
+        $('#open_' + instanceFullNameId).attr('href', instanceProxyUri);
+      }
+    }
+
+    function updateRowDOMFromState(instanceFullNameId, instanceState, instanceProxyUri = undefined) {
       var target = $("#state_" + instanceFullNameId);
       var currentContent = target.html();
-      if (currentContent.includes(stateDOMs[state])){
+      if (currentContent.includes(stateDOMs[instanceState])){
         console.log('No need to update');
         return
       }
-      newTarget = buildDOMFromState(instance, state);
+      // Updates the state icon for the row
+      newTarget = buildDOMRowStateIcon(instanceFullNameId, instanceState);
       target.replaceWith(newTarget);
+      //
+      updateDOMRowOpenLink(instanceFullNameId, instanceState, instanceProxyUri)
     }
 
     function updateDOMProject(pid) {
@@ -746,34 +817,50 @@
   <div id="body-content" style="display:none;">
     <!-- Action bar -->
     <div class="row valign-wrapper">
-      <div class="col s1">
+      <div class="col s1 l1">
         <h6>Notebooks</h6>
       </div>
-      <div class="col s8 center-align">
+      <div class="col s6 l7 center-align">
         <p class="red-text text-accent-4" id="error-start-stop">&nbsp;</p>
       </div>
-      <div class="col s1">
-        <a class="upper_case valign-wrapper" id="list-instances-button">
+      <div class="col s5 l4 right-align">
+        <!-- <a class="upper_case valign-wrapper" id="list-instances-button"></a>
           <i class="material-icons">refresh</i>
           <span>&nbsp;Refresh</span>
+        </a> -->
+        <a class="btn-flat upper_case btn-action" id="list-instances-button">
+          <i class="material-icons left">refresh</i>Refresh
         </a>
-      </div>
-      <div class="col s1">
+        <span>&nbsp;&nbsp;</span>
         <a class="btn-flat upper_case btn-action disabled" id="action-instances-start">
           <i class="material-icons left">play_arrow</i>Start
         </a>
-      </div>
-      <div class="col s1">
+        <span>&nbsp;&nbsp;</span>
         <a class="btn-flat upper_case btn-action disabled" id="action-instances-stop">
           <i class="material-icons left">stop</i>Stop
         </a>
       </div>
+      <!-- <div class="col s1">
+        <a class="btn-flat upper_case btn-action disabled valign-wrapper" id="action-instances-start">
+          <i class="material-icons left">play_arrow</i>Start
+        </a>
+      </div>
+      <div class="col s1">
+        <a class="btn-flat upper_case btn-action disabled valign-wrapper" id="action-instances-stop">
+          <i class="material-icons left">stop</i>Stop
+        </a>
+      </div> -->
     </div>
     <div class="divider"></div>
     <!-- -->
     <div class="row valign-wrapper m-b-s">
-      <div class="col s6"><p>Start and stop your existing notebook instances.</p></div>
-      <div class="col s6 right-align"><p>
+      <div class="col s9">
+        <p>
+          Manage and use Jupyter Notebooks with a notebook instance.
+          Notebook instances have JupyterLab pre-installed and are configured with GPU-enabled machine learning frameworks.
+        </p>
+      </div>
+      <div class="col s3 right-align"><p>
         <div class="switch">
           <label>
             No filter
@@ -804,7 +891,13 @@
         <table>
           <thead>
             <tr>
-                <th></th>
+                <th class="center-align">
+                  &nbsp;
+                  <label>
+                    <input type="checkbox" class="filled-in checkbox-blue" id="select-all-instances"/>
+                    <span>&nbsp;</span>
+                  </label>
+                </th>
                 <th></th>
                 <th>Instance name</th>
                 <th></th>
