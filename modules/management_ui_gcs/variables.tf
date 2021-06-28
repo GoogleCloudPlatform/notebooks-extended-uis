@@ -74,3 +74,8 @@ variable "relative_path" {
   description = "Which path to use for static files"
   type        = string
 }
+
+variable "is_activating_project_selector_proactive" {
+  description = "Whether activating the project selector must be passed as a URL parameter"
+  type        = string
+}

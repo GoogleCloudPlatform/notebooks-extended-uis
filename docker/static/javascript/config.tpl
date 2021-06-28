@@ -27,4 +27,10 @@ var config = {
   'discoveryDocs': discoveryDocs,
   'scope': scopes
 }
+
+
+var ux = {
+  INTERVAL_CHECK: 5000,
+  IS_ACTIVATING_PROJECT_SELECTOR_PROACTIVE: ${is_activating_project_selector_proactive}
+}
 // [END config]

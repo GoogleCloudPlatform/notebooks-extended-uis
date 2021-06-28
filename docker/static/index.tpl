@@ -95,13 +95,11 @@
       STATE_UNSPECIFIED: 'error',
       DELETED: 'error',
     }
-    var URL_VAR_PROJECT_ID = "projectId";
+    var URL_VAR_PROJECT_ID = 'projectId';
+    var URL_ACTIVATE_PROJECT_SELECTOR = 'hasProjectSelector'
     var filters = {
       ALL: 0,
       USER: 1
-    }
-    var ux = {
-      INTERVAL_CHECK: 5000
     }
     var stateCheckIntervals = new Object();
     var currentUser = new User();
@@ -136,7 +134,7 @@
       $('#revoke-access-button').click(function() {revokeAccess();});
       $('#list-instances-button').click(function() {handleListInstances();});
       $('#list-instances-filter').click(function() {handleListInstances();});
-      if (!currentGCPContext.isProjectIdForced()) {
+      if (currentGCPContext.isProjectSelectorEnabled()) {
         $('#nav-projects-select').click(function() {handleListProjects()});
       }
       $('#action-instances-start').click(function() {handleStartInstance();});
@@ -196,6 +194,23 @@
       this.isProjectSet = function() { return (this.projectId != ""); }
       this.isProjectIdForced = function() { return (getURLVariable(URL_VAR_PROJECT_ID) != ""); }
 
+      this.isProjectSelectorEnabled = function() {
+        // When a project is passed in the URL, it always prevails over the selector.
+        // Otherwise, depends whether the selector must be actively enabled. Because
+        // project.list is user scoped, they could see projects outside the perimeter.
+        // Although all API calls to those projects would be blocked, some companies
+        // prefer not to show the projects at all.
+        if (this.isProjectIdForced()) {
+          return false
+        }
+        if (!ux.IS_ACTIVATING_PROJECT_SELECTOR_PROACTIVE) {
+          return true;
+        } else {
+          var urlActivateProjectSelector = getURLVariable(URL_ACTIVATE_PROJECT_SELECTOR);
+          return (str2bool(urlActivateProjectSelector));
+        }
+      }
+
       this.setProjectId(getURLVariable(URL_VAR_PROJECT_ID));
     }
 
@@ -215,8 +230,10 @@
         $('#nav-projects').css('display', 'inline-block');
         updateProject(currentGCPContext.getProjectId());
         if (currentGCPContext.isProjectIdForced()) {
-          $('#nav-projects-select i:first-of-type').hide();
           handleListInstances();
+        }
+        if (!currentGCPContext.isProjectSelectorEnabled()) {
+          $('#nav-projects-select i:first-of-type').hide();
         }
       } else {
         $("#body-no-authenticated").show();
@@ -423,6 +440,13 @@
         return undefined
       }
       return addPrefix(instance.proxyUri, 'https://')
+    }
+
+    function str2bool(s) {
+      return (
+        s.toLowerCase() == 'true' ||
+        s.toLowerCase() == '1' ||
+        s.toLowerCase() == 'yes');
     }
 
     // ----------------------
