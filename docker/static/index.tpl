@@ -232,9 +232,10 @@
         if (currentGCPContext.isProjectIdForced()) {
           handleListInstances();
         }
-        if (!currentGCPContext.isProjectSelectorEnabled()) {
-          $('#nav-projects-select i:first-of-type').hide();
-        }
+        // if (!currentGCPContext.isProjectSelectorEnabled()) {
+        //   $('#nav-projects-select i:first-of-type').hide();
+        // }
+        manageDOMProjectSelector();
       } else {
         $("#body-no-authenticated").show();
         $("#general-loader").hide();
@@ -452,6 +453,19 @@
     // ----------------------
     // DOM functions
     // ----------------------
+    manageDOMProjectSelector = function() {
+        if (currentGCPContext.isProjectIdForced()) {
+          $('#nav-projects-select i:first-of-type').hide();
+          return
+        }
+        if (ux.IS_ACTIVATING_PROJECT_SELECTOR_PROACTIVE) {
+          var urlActivateProjectSelector = getURLVariable(URL_ACTIVATE_PROJECT_SELECTOR);
+          if (!str2bool(urlActivateProjectSelector)) {
+            $('#nav-projects-select').hide();
+          }
+        }
+      }
+
     function addProjectsToDOM(response) {
       if (response.hasOwnProperty('error')){
         let error_html = makeRequestErrorDOM(response['error']);
