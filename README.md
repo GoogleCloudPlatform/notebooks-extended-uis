@@ -79,6 +79,7 @@ From your command line, make sure that you are in the the root folder of this re
 |cloud_dns_record_zone|`string`||no|Name of the Cloud DNS zone where you want to add the DNS record for the console. Ex: `example-com-zone`|
 |gcs_location|`string`||no|Location where to create the bucket that host the console. Ex: `US`|
 |gcs_html_prefix|`string`|`https://storage.googleapis.com`|no|GCS URL prefix that gives access to objects|
+|is_activating_project_selector_proactive|`string`|`true`|no|Whether users must enabled the project selector through the `hasProjectSelector` URL parameter. When set to `true`, users must always set `projectId` in the URL to display instances for that project.|
 
 ## Behavior
 

@@ -31,6 +31,12 @@ variable "client_id" {
   type        = string
 }
 
+variable "is_activating_project_selector_proactive" {
+  description = "Whether activating the project selector must be passed as a URL parameter"
+  type        = string
+  default     = "true"
+}
+
 # TODO(mayran): Add a validation for gcs and gcs_static
 variable "deployment_target" {
   description = "Where to deploy the custom cloud console. Must be supported by VPC-SC. `gcs` uses the default Cloud Storage Url. `gcs_static` sets up a static bucket with HTTPS Load Balancer."
