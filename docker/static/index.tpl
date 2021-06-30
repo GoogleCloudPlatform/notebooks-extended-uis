@@ -816,12 +816,12 @@
       </ul>
       <!-- Right side -->
       <ul id="nav-profile" class="right" style="display:none">
-        <li>
+        <li class="navbar-height valign-wrapper">
           <a class="dropdown-trigger" href="#!" data-target="nav-dropdown-extra">
             <i class="material-icons">more_vert</i>
           </a>
         </li>
-        <li>
+        <li class="navbar-height valign-wrapper">
           <a class="dropdown-trigger" href="#!" data-target="nav-dropdown-profile">
             <img alt="" class="circle" id="nav-avatar" style="height: 42px; padding:4 4 0 0;">
           </a>
