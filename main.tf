@@ -40,11 +40,11 @@ resource "google_notebooks_instance" "instance" {
   machine_type  = "n2-standard-2"
   location      = "us-west1-b"
   metadata = {
-    installed-extensions  = "beatrix_jupyterlab-latest.tar.gz"
+    installed-extensions  = "jupyterlab_bigquery-latest.tar.gz,jupyterlab_gcsfilebrowser-latest.tar.gz,jupyterlab_executor-latest.tar.gz"
   }
   vm_image {
     project      = "deeplearning-platform-release"
-    image_family = "tf2-latest-cpu"
+    image_family = "common-cpu"
   }
 }
 // [END example_notebook]

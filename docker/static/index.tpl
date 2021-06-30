@@ -19,6 +19,7 @@
   <title>Notebooks Management Console</title>
   <meta http-equiv="Cache-control" content="no-cache, no-store, must-revalidate">
   <meta http-equiv="Pragma" content="no-cache">
+  <link rel="icon" href="https://ssl.gstatic.com/pantheon/images/favicon/_v10/CLOUD_ML_SECTION.png">
   <link rel="stylesheet" href="${relative_path}/third_party/materialize/materialize.min.css">
   <style>
     @font-face {
