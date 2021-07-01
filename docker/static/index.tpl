@@ -72,10 +72,12 @@
     a.upper_case, a.upper_case:link, a.upper_case:visited {color: #3367d6;cursor: pointer;text-transform: uppercase; font-weight: 500; font-size: 13px;font-family: Roboto;}
     a.upper_case:hover {color: #1C3AA9; background-color:rgba(0, 0, 0, 0.04);}
     .m-no{margin:0 0 0 0;}
+    .m-no-b{margin-bottom:0;}
     .m-l-s {margin-left:5px;}
     .m-l-m {margin-left:10px;}
     .m-l-l {margin-left:20px;}
     .m-t-s {margin-top:5px;}
+    .m-t-m {margin-top:10px;}
     .m-r-s {margin-right:5px;}
     .m-b-s {margin-bottom:5px;}
     table>thead {font-family: Roboto;font-size: 12px;font-style: normal;font-weight: 500;height: 20px;line-height: 20px;}
@@ -749,7 +751,7 @@
 <body class="">
   <!-- Modal -->
   <div id="modal-projects" class="modal modal-fixed-footer">
-    <div id="modal-project-list-loader" class="center-align">
+    <div id="modal-project-list-loader" class="center-align m-t-m">
       <div class="preloader-wrapper small active">
         <div class="spinner-layer spinner-blue-only">
           <div class="circle-clipper left">
@@ -773,7 +775,7 @@
       </div>
     </div>
     <div class="modal-footer">
-      <a href="#!" class="modal-close waves-effect waves-green btn-flat">Cancel</a>
+      <a href="#!" class="modal-close btn-flat">Cancel</a>
     </div>
   </div>
   <!-- Dropdowns rightside-->
@@ -830,13 +832,13 @@
     </div>
   </nav>
   <!-- Body -->
-  <div id="body-no-authenticated" style="display: none;">
+  <div id="body-no-authenticated" class="m-t-m" style="display: none;">
     <div class="row center-align">
       <a id="sign-in-button" class="waves-effect waves-light blue darken-3 btn">Signin</a>
     </div>
   </div>
-  <div id="errorer" class="center-align red-text text-darken-2" style="display:none"></div>
-  <div id="general-loader" class="center-align">
+  <div id="errorer" class="center-align red-text text-darken-2 m-t-m" style="display:none"></div>
+  <div id="general-loader" class="center-align m-t-m">
     <div class="preloader-wrapper small active">
       <div class="spinner-layer spinner-blue-only">
         <div class="circle-clipper left">
@@ -849,7 +851,7 @@
       </div>
     </div>
   </div>
-  <div id="body-no-project" class="center-align" style="display:none;">
+  <div id="body-no-project" class="center-align m-t-m" style="display:none;">
     <div class="row">
       <i class="material-icons" style="font-size:100px">blur_on</i>
     </div>
@@ -859,7 +861,7 @@
   </div>
   <div id="body-content" style="display:none;">
     <!-- Action bar -->
-    <div class="row valign-wrapper">
+    <div class="row valign-wrapper m-no-b">
       <div class="col s1 l1">
         <h6>Notebooks</h6>
       </div>
