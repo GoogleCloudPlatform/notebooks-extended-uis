@@ -40,7 +40,7 @@ resource "google_notebooks_instance" "instance" {
   machine_type  = "n2-standard-2"
   location      = "us-west1-b"
   metadata = {
-    installed-extensions  = "jupyterlab_bigquery-latest.tar.gz,jupyterlab_gcsfilebrowser-latest.tar.gz,jupyterlab_executor-latest.tar.gz"
+    enable-extended-ui = "True"
   }
   vm_image {
     project      = "deeplearning-platform-release"

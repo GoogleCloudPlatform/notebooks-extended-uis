@@ -4,3 +4,4 @@ project               = "example-project"
 console_url           = "example-bucket"
 deploy_consoles       = "true"
 #[END tfvars_example]
+# is_activating_project_selector_proactive = "false"
