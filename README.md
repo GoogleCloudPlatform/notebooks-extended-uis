@@ -1,19 +1,17 @@
 # Notebooks Management Console
 
-The goal of this solution is to mitigate data exfiltration risks through the Cloud Console due to VPC Services Controls (VPC-SC) currently not supporting the Cloud Console.
+The goal of this solution is to deploy a simple HTML page that can act as a console to list and manage Google Cloud's Notebooks.
 
-To work around this limitation, the solution must provide:
+The solution provides:
 
 1. An interface to Google Cloud APIs that is flexible and supported by VPC-SC.
-1. A way for data practitioneers to exerce some controls over their sandbox environments.
-
-This repository addresses the latter point and deploys a web app for end users and assumes that the former points is addressed by using AI Platform Notebooks.
+1. A way for data practitioneers to exerce some controls over their Notebooks environments.
 
 Use this solution in the following context:
 
-1. You are an administrator who creates environments on behalf of end-users.
-1. Your end-users interacts with Google APIs through AI Platform Notebooks.
+1. You are an administrator who creates Notebooks environments on behalf of end-users.
 1. Your company uses VPC-SC to mitigate exfiltration risks.
+1. Your end-users can interact with Google APIs through AI Platform Notebooks.
 1. Your IAM policies enforce what end-users can and can not do.
 
 **This is not an official product**
@@ -24,7 +22,7 @@ Use this solution in the following context:
 
 What you deploy is:
 
-1. A user interface that is VPC-SC compliant and hosted on Cloud Storage as a static website fronted by a global HTTPs Load Balancer.
+1. A user interface that is VPC-SC compliant and hosted on Cloud Storage.
 1. A secure way for users to list, manage and access their AI Platform Notebooks.
 1. API calls leverage user credentials provided by a Google SignIn flow.
 
@@ -48,7 +46,7 @@ Before you can deploy the custom console, you need an **OAuth2.0 Web client ID**
 - If you user `gcs` as a `deployment_target`, make sure to add `https://storage.googleapis.com` as a Javascript origin.
 - If you user `gcs_static` as a `deployment_target`, make sure to add the `console_url` value as a Javascript origin.
 
-Once you have created the web client ID, go to the console and copy the values to populate `client_id` in your `.tfvars` file.
+Once you have created the web client ID, go to the console and copy the values to populate `client_id` in your `terraform.tfvars` file.
 
 ## Deployment with Terraform
 
@@ -81,24 +79,3 @@ From your command line, make sure that you are in the the root folder of this re
 |gcs_html_prefix|`string`|`https://storage.googleapis.com`|no|GCS URL prefix that gives access to objects|
 |is_activating_project_selector_proactive|`string`|`true`|no|Whether users must enabled the project selector through the `hasProjectSelector` URL parameter. When set to `true`, users must always set `projectId` in the URL to display instances for that project.|
 
-## Behavior
-
-This solution aims at . You should have a VPC-SC setup for your project and that includes at a minimum the Notebooks API, BigQuery API, Cloud Storage API. With such a setup:
-
-- Access to the console from outside the perimeter should return
-
-    ```xml
-    <Error>
-      <Code>SecurityPolicyViolated</Code>
-      <Message>Request violates VPC Service Controls.</Message>
-    </Error>
-    ```
-
-- If for some reason, you managed to access the UI, the API call for listing notebooks should return a `401` or `403` error and the UI would not show any notebook.
-
-## Notes
-
-- You can access apis.google.com. You can not add the API to VPC-SC but it does not create exfiltration risk. The API is only used to authenticate the user.
-- The Terrafrom script currently only supports deplpoyment on Cloud Storage. The files are packages in a Docker folder though, so you can deploy the application to services that are supported by VPC-SC and can run containers (Cloud Run, AI Platform Notebooks, Compute Engine, Kubernetes Engine)
-- `cloudresourcemanager.googleapis.com` is user-scoped when fetching projects which means that users might still be able to list their own projects which is not a security liability.
-- The solution disable the CDN for the load balancer to prevent the static content to cache. Although it would only show the web page and API calls would still be blocked, seeing the UI could be confusing for users.
