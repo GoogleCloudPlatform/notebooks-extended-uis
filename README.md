@@ -1,4 +1,4 @@
-# Notebooks Management Console
+# Extended Notebooks UIs
 
 The goal of this solution is to deploy a simple HTML page that can act as a console to list and manage Google Cloud's Notebooks.
 
