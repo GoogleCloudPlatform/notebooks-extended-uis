@@ -4,8 +4,10 @@ The goal of this solution is to deploy a simple HTML page that can act as a cons
 
 The solution provides:
 
-1. An interface to Google Cloud APIs that is flexible and supported by VPC-SC.
-1. A way for data practitioneers to exerce some controls over their Notebooks environments.
+1. A way to deploy semi-managed Notebooks with an extended UI that provides graphical interaction to some Google Cloud services
+1. A way for data practitioneers to exerce some controls over those Notebooks environments.
+
+Both components are compliant with VPC Services Controls and support data residency.
 
 Use this solution in the following context:
 
@@ -16,21 +18,22 @@ Use this solution in the following context:
 
 **This is not an official product**
 
-> Note: The current version of this solution is static only and does not use any server. It authenticates the user to Google and uses their crendentials to call Google APIs directly. The client does not enforce any server-side logic other than what Google APIs provide. You must set the proper authorization rules using Cloud IAM to prevent users from performing unauthorized actions.
+> Note: The detault deployment of the Notebooks management UI is static only and does not use any server side code. It authenticates the user to Google and uses their crendentials to call Google APIs directly. The client does not enforce any server-side logic other than what Google APIs provide. You must set the proper authorization rules using Cloud IAM to prevent users from performing unauthorized actions.
 
 ## What you deploy
 
 What you deploy is:
 
-1. A user interface that is VPC-SC compliant and hosted on Cloud Storage.
-1. A secure way for users to list, manage and access their AI Platform Notebooks.
-1. API calls leverage user credentials provided by a Google SignIn flow.
+1. A UI to manage Notebooks that is VPC-SC compliant and hosted on Cloud Storage.
+1. A secure way for users to list, manage and access their Notebooks.
+1. An OAuth2.0 flow so the Notebooks management UI can interact with Google API using the user's credentials provided through Google Sign-In.
+1. (Optionnal) Notebooks with an extended UI. This can also be part as part of another workflow in your organization.
 
 ## Preparation
 
 You can run this example on your admninistrative machine or by using Cloud Shell. When possible, we recommend to use Cloud Shell.
 
-This blueprint uses the following tools:
+This solution uses the following tools:
 
 - Google Cloud SDK aka gcloud CLI (already installed in Cloud Shell).
 - Terraform (See installation instructions).
