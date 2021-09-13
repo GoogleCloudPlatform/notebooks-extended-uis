@@ -385,23 +385,43 @@
       console.log("Checking state for instance " + instanceFullName);
       var instanceFullNameId = instanceFullName.replace(/\//g, '_');
       var instanceProxyUri;
-      var url = "https://notebooks.googleapis.com/v1/" + instanceFullName;
+      // Getting the state of the instance is not enough in case there are startup scripts.
+      // Also checks that the script completely ran.
+      var urlGetInstance = "https://notebooks.googleapis.com/v1/" + instanceFullName;
       var request = gapi.client.request({
         'method': 'GET',
-        'path': url
+        'path': urlGetInstance
       });
+      // Execute the API request.
       request.execute(function(instance) {
-        if (instance.state == 'STOPPED' || instance.state == 'ACTIVE') {
-          console.log("Clearing interval for " + instanceFullName);
-          clearInterval(stateCheckIntervals[instanceFullName]);
-          delete stateCheckIntervals[instanceFullName];
-        }
-        // Only fills the proxy URI if the user can use the instance from a Permission > Access to JupyterLab
-        // perspective. When the proxy URI === undefined, `buildDOMRowOpenLink` does not enable the link.
-        if (hasInstancePermission(instance)) {
-          instanceProxyUri = instance.proxyUri;
-        }
-        updateRowDOMFromState(instanceFullNameId, instance.state, instanceProxyUri);
+        var partsName = instanceFullName.split('/');
+        var instanceName = partsName[partsName.length - 1];
+        var instanceZone = partsName[partsName.length - 3];
+        var urlGetGuestAttributes = "https://compute.googleapis.com/compute/v1/projects/" + projectId;
+        urlGetGuestAttributes += "/zones/" + instanceZone;
+        urlGetGuestAttributes += "/instances/" + instanceName;
+        urlGetGuestAttributes += "/getGuestAttributes?queryPath=notebooks%2Fsystem_status";
+        var request = gapi.client.request({
+          'method': 'GET',
+          'path': urlGetGuestAttributes
+        });
+        request.execute(function(response) {
+          systemStatus = response['queryValue']['items'][0]['value'];
+          if (
+              instance.state == 'STOPPED'
+              || (instance.state == 'ACTIVE' && systemStatus == 'GOOGLE_C2D_COMPLETED')
+          ) {
+            console.log("Clearing interval for " + instanceFullName);
+            clearInterval(stateCheckIntervals[instanceFullName]);
+            delete stateCheckIntervals[instanceFullName];
+          }
+          // Only fills the proxy URI if the user can use the instance from a Permission > Access to JupyterLab
+          // perspective. When the proxy URI === undefined, `buildDOMRowOpenLink` does not enable the link.
+          if (hasInstancePermission(instance)) {
+            instanceProxyUri = instance.proxyUri;
+          }
+          updateRowDOMFromState(instanceFullNameId, instance.state, instanceProxyUri);
+        });
       });
     }
     // ----------------------
@@ -714,13 +734,12 @@
       var target = $("#state_" + instanceFullNameId);
       var currentContent = target.html();
       if (currentContent.includes(stateDOMs[instanceState])){
-        console.log('No need to update');
+        console.log('No need to update DOM');
         return;
       }
       // Updates the state icon for the row
       newTarget = buildDOMRowStateIcon(instanceFullNameId, instanceState);
       target.replaceWith(newTarget);
-      //
       updateDOMRowOpenLink(instanceFullNameId, instanceState, instanceProxyUri);
     }
 
