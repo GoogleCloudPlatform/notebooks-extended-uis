@@ -397,19 +397,34 @@
         var partsName = instanceFullName.split('/');
         var instanceName = partsName[partsName.length - 1];
         var instanceZone = partsName[partsName.length - 3];
-        var urlGetGuestAttributes = "https://compute.googleapis.com/compute/v1/projects/" + projectId;
-        urlGetGuestAttributes += "/zones/" + instanceZone;
-        urlGetGuestAttributes += "/instances/" + instanceName;
-        urlGetGuestAttributes += "/getGuestAttributes?queryPath=notebooks%2Fsystem_status";
+        var urlGetAttributes = "https://compute.googleapis.com/compute/v1/projects/" + projectId;
+        urlGetAttributes += "/zones/" + instanceZone;
+        urlGetAttributes += "/instances/" + instanceName;
+        // TODO(mayran): How to get both 2Fsystem_status and post_startup_script_status at the same time
+        urlGetAttributesNotebooks = urlGetAttributes + "/getGuestAttributes?queryPath=notebooks%2F";
         var request = gapi.client.request({
           'method': 'GET',
-          'path': urlGetGuestAttributes
+          'path': urlGetAttributesNotebooks
         });
         request.execute(function(response) {
-          systemStatus = response['queryValue']['items'][0]['value'];
+          var systemStatus,
+              handlePostStartupScript;
+          if (!response['queryValue'].hasOwnProperty('items')) {
+            return
+          }
+          var notebooksAttributes = response['queryValue']['items'];
+          for (var i = 0; i < notebooksAttributes.length; i++) {
+            if (notebooksAttributes[i]['key'] == 'system_status') {
+              systemStatus = notebooksAttributes[i]['value']
+            }
+            if (notebooksAttributes[i]['key'] == 'handle_post_startup_script') {
+              handlePostStartupScript = notebooksAttributes[i]['value']
+            }
+          }
+          console.log("instanceName:" + instanceName + " instance.state: " + instance.state +  " systemStatus: " + systemStatus + " handlePostStartupScript: " + handlePostStartupScript)
           if (
               instance.state == 'STOPPED'
-              || (instance.state == 'ACTIVE' && systemStatus == 'GOOGLE_C2D_COMPLETED')
+              || (instance.state == 'ACTIVE' && systemStatus == 'GOOGLE_C2D_COMPLETED' && handlePostStartupScript == 'DONE')
           ) {
             console.log("Clearing interval for " + instanceFullName);
             clearInterval(stateCheckIntervals[instanceFullName]);
@@ -420,7 +435,7 @@
           if (hasInstancePermission(instance)) {
             instanceProxyUri = instance.proxyUri;
           }
-          updateRowDOMFromState(instanceFullNameId, instance.state, instanceProxyUri);
+          updateRowDOMFromState(instanceFullNameId, instance.state, instanceProxyUri, handlePostStartupScript);
         });
       });
     }
@@ -683,6 +698,7 @@
         state: instanceState,
       };
       var content = "";
+      // The green tick can appear when the GCE instance is active and JupyterLab is not ready yet.
       if (instanceState == 'ACTIVE') {
         attributes['class'] = 'material-icons green-text text-darken-2';
         content = stateDOMs[instanceState];
@@ -720,9 +736,9 @@
       return a_html;
     }
 
-    function updateDOMRowOpenLink(instanceFullNameId, instanceState, instanceProxyUri) {
+    function updateDOMRowOpenLink(instanceFullNameId, instanceState, instanceProxyUri, handlePostStartupScript) {
       instanceProxyUri = addPrefix(instanceProxyUri, 'https://');
-      if (instanceState != 'ACTIVE' || instanceProxyUri === undefined) {
+      if (instanceState != 'ACTIVE' || instanceProxyUri === undefined  || handlePostStartupScript != 'DONE') {
         $('#open_' + instanceFullNameId).addClass('disabled');
       } else {
         $('#open_' + instanceFullNameId).removeClass('disabled');
@@ -730,7 +746,8 @@
       }
     }
 
-    function updateRowDOMFromState(instanceFullNameId, instanceState, instanceProxyUri = undefined) {
+    function updateRowDOMFromState(instanceFullNameId, instanceState, instanceProxyUri = undefined, handlePostStartupScript = undefined) {
+      updateDOMRowOpenLink(instanceFullNameId, instanceState, instanceProxyUri, handlePostStartupScript);
       var target = $("#state_" + instanceFullNameId);
       var currentContent = target.html();
       if (currentContent.includes(stateDOMs[instanceState])){
@@ -740,7 +757,6 @@
       // Updates the state icon for the row
       newTarget = buildDOMRowStateIcon(instanceFullNameId, instanceState);
       target.replaceWith(newTarget);
-      updateDOMRowOpenLink(instanceFullNameId, instanceState, instanceProxyUri);
     }
 
     function updateDOMProject(pid) {
